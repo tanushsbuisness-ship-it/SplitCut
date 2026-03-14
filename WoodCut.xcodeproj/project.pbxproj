@@ -6,8 +6,30 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		0CBBEDAF2F65D4CE005FB57D /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 0CBBEDAE2F65D4CE005FB57D /* GoogleSignIn */; };
+		0CBBEDB12F65D4CE005FB57D /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 0CBBEDB02F65D4CE005FB57D /* GoogleSignInSwift */; };
+		0CBBEDBA2F65D677005FB57D /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 0CBBEDB92F65D677005FB57D /* FirebaseAuth */; };
+		0CBBEDBE2F65D677005FB57D /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 0CBBEDBD2F65D677005FB57D /* FirebaseFirestore */; };
+		7A8A6F202C9185F900E03B8D /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 7A8A6F1F2C9185F900E03B8D /* GoogleMobileAds */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXBuildRule section */
+		0C7B31972F660FAF00BEED43 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			fileType = pattern.proxy;
+			inputFiles = (
+			);
+			isEditable = 1;
+			outputFiles = (
+			);
+			script = "# Type a script or drag a script file from your workspace to insert its path.\n";
+		};
+/* End PBXBuildRule section */
+
 /* Begin PBXFileReference section */
-		0CBBED2E2F65AF72005FB57D /* WoodCut.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WoodCut.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0CBBED2E2F65AF72005FB57D /* WoodCut.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = WoodCut.app; path = SplitCut.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -23,6 +45,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0CBBEDAF2F65D4CE005FB57D /* GoogleSignIn in Frameworks */,
+				0CBBEDBA2F65D677005FB57D /* FirebaseAuth in Frameworks */,
+				0CBBEDB12F65D4CE005FB57D /* GoogleSignInSwift in Frameworks */,
+				0CBBEDBE2F65D677005FB57D /* FirebaseFirestore in Frameworks */,
+				7A8A6F202C9185F900E03B8D /* GoogleMobileAds in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -57,6 +84,7 @@
 				0CBBED2C2F65AF72005FB57D /* Resources */,
 			);
 			buildRules = (
+				0C7B31972F660FAF00BEED43 /* PBXBuildRule */,
 			);
 			dependencies = (
 			);
@@ -65,6 +93,11 @@
 			);
 			name = WoodCut;
 			packageProductDependencies = (
+				0CBBEDAE2F65D4CE005FB57D /* GoogleSignIn */,
+				0CBBEDB02F65D4CE005FB57D /* GoogleSignInSwift */,
+				0CBBEDB92F65D677005FB57D /* FirebaseAuth */,
+				0CBBEDBD2F65D677005FB57D /* FirebaseFirestore */,
+				7A8A6F1F2C9185F900E03B8D /* GoogleMobileAds */,
 			);
 			productName = WoodCut;
 			productReference = 0CBBED2E2F65AF72005FB57D /* WoodCut.app */;
@@ -94,6 +127,11 @@
 			);
 			mainGroup = 0CBBED252F65AF72005FB57D;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				0CBBEDAD2F65D4CE005FB57D /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				0CBBEDB22F65D677005FB57D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				7A8A6F1E2C9185F900E03B8D /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 0CBBED2F2F65AF72005FB57D /* Products */;
 			projectDirPath = "";
@@ -251,23 +289,20 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = WoodCut/WoodCut.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8SNL2N58X9;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "App-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = TS.WoodCut;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = SplitCut;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
@@ -283,23 +318,20 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = WoodCut/WoodCut.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8SNL2N58X9;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "App-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = TS.WoodCut;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = SplitCut;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
@@ -332,6 +364,61 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		0CBBEDAD2F65D4CE005FB57D /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.1.0;
+			};
+		};
+		0CBBEDB22F65D677005FB57D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.10.0;
+			};
+		};
+		7A8A6F1E2C9185F900E03B8D /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		0CBBEDAE2F65D4CE005FB57D /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0CBBEDAD2F65D4CE005FB57D /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		0CBBEDB02F65D4CE005FB57D /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0CBBEDAD2F65D4CE005FB57D /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
+		};
+		0CBBEDB92F65D677005FB57D /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0CBBEDB22F65D677005FB57D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		0CBBEDBD2F65D677005FB57D /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0CBBEDB22F65D677005FB57D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		7A8A6F1F2C9185F900E03B8D /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7A8A6F1E2C9185F900E03B8D /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 0CBBED262F65AF72005FB57D /* Project object */;
 }
