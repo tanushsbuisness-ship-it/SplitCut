@@ -83,11 +83,20 @@ struct ProjectsView: View {
     }
 
     private var emptyState: some View {
-        ContentUnavailableView(
-            "No Projects",
-            systemImage: "folder.badge.plus",
-            description: Text("Tap + to create your first cut plan project.")
-        )
+        ContentUnavailableView {
+            Label("No Projects", systemImage: "folder.badge.plus")
+        } description: {
+            Text("Tap the button below or the + at the top to create your first cut plan project.")
+        } actions: {
+            Button {
+                showingAdd = true
+            } label: {
+                Label("New Project", systemImage: "plus.circle.fill")
+                    .font(.headline)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+        }
     }
 
     private var addProjectSheet: some View {

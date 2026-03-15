@@ -21,7 +21,7 @@ final class ARMeasurementState {
     var phase:        MeasurePhase = .widthFirst
     var widthMeters:  Double?      = nil
     var lengthMeters: Double?      = nil
-    var message: String = "Point at the board and tap a corner to begin measuring Width."
+    var message: String = "Align the crosshair with a corner and tap to start Width."
 
     var widthInches:  Double? { widthMeters.map  { $0 * 39.3701 } }
     var lengthInches: Double? { lengthMeters.map { $0 * 39.3701 } }
@@ -36,7 +36,7 @@ final class ARMeasurementState {
         phase        = .widthFirst
         widthMeters  = nil
         lengthMeters = nil
-        message      = "Point at the board and tap a corner to begin measuring Width."
+        message      = "Align the crosshair with a corner and tap to start Width."
     }
 }
 
@@ -68,7 +68,12 @@ struct ARMeasureSheet: View {
             VStack(spacing: 0) {
                 topBar
                 Spacer()
-                crosshairIcon
+                VStack(spacing: 6) {
+                    crosshairIcon
+                    Text("Aim with the crosshair, then tap")
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.85))
+                }
                 Spacer()
                 bottomPanel
             }
@@ -77,19 +82,26 @@ struct ARMeasureSheet: View {
     }
 
     private var topBar: some View {
-        HStack {
-            Button("Cancel") { dismiss() }
-                .foregroundStyle(.white)
-                .padding()
-            Spacer()
-            if let w = arState.widthInches, let l = arState.lengthInches {
-                Text(String(format: "W: %.2f\"  L: %.2f\"", w, l))
-                    .font(.headline.monospacedDigit())
+        VStack(spacing: 0) {
+            // Push below the Dynamic Island / notch
+            Color.clear
+                .frame(height: UIApplication.shared.connectedScenes
+                    .compactMap { ($0 as? UIWindowScene)?.keyWindow?.safeAreaInsets.top }
+                    .first ?? 0)
+            HStack {
+                Button("Cancel") { dismiss() }
                     .foregroundStyle(.white)
                     .padding()
+                Spacer()
+                if let w = arState.widthInches, let l = arState.lengthInches {
+                    Text(String(format: "W: %.2f\"  L: %.2f\"", w, l))
+                        .font(.headline.monospacedDigit())
+                        .foregroundStyle(.white)
+                        .padding()
+                }
             }
+            .background(.ultraThinMaterial)
         }
-        .background(.ultraThinMaterial)
     }
 
     private var crosshairIcon: some View {
@@ -286,7 +298,9 @@ final class ARCoordinator: NSObject {
     @MainActor
     @objc func handleTap(_ gesture: UITapGestureRecognizer) {
         guard let view = sceneView else { return }
-        let location = gesture.location(in: view)
+        // Use the center crosshair location rather than the finger touch
+        let location = CGPoint(x: view.bounds.midX, y: view.bounds.midY)
+        // Use the user's finger tap location (not the center crosshair)
 
         guard let query = view.raycastQuery(
             from: location,
@@ -395,3 +409,4 @@ final class ARCoordinator: NSObject {
         view.scene.rootNode.addChildNode(node)
     }
 }
+

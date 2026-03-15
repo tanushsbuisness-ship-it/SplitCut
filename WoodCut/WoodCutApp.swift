@@ -39,6 +39,7 @@ struct WoodCutApp: App {
             MaterialItem.self,
             RequiredPiece.self,
             ScrapItem.self,
+            SavedPlan.self,
         ])
 
         do {

@@ -58,8 +58,25 @@ struct ScrapUsage: Identifiable {
     let materialType: MaterialType
     let thickness: Double?
     let colorHex: String
+    /// Position where the piece was cut from the scrap (x, y coordinates)
+    let cutX: Double
+    let cutY: Double
+    /// Updated free rectangles after this cut (for database persistence)
+    let updatedFreeRects: [ScrapFreeRect]
 
     var scrapArea: Double { scrapWidth * scrapHeight }
+    
+    /// Convert this usage to a ScrapCut for recording on the ScrapItem
+    func toScrapCut() -> ScrapCut {
+        ScrapCut(
+            x: cutX,
+            y: cutY,
+            width: pieceWidth,
+            height: pieceHeight,
+            shape: pieceShape,
+            pieceName: pieceName
+        )
+    }
 }
 
 /// All placements on one physical sheet

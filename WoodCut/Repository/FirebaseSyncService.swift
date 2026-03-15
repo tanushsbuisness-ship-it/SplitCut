@@ -179,7 +179,32 @@ final class FirebaseSyncService {
     }
 
     private func scrapData(_ scrap: ScrapItem) -> [String: Any] {
-        [
+        // Serialize cuts to JSON-compatible format
+        let cutsArray: [[String: Any]] = scrap.cuts.map { cut in
+            [
+                "id": cut.id.uuidString,
+                "x": cut.x,
+                "y": cut.y,
+                "width": cut.width,
+                "height": cut.height,
+                "shape": cut.shape.rawValue,
+                "pieceName": cut.pieceName,
+                "cutDate": Timestamp(date: cut.cutDate),
+            ]
+        }
+        
+        // Serialize free rects to JSON-compatible format
+        let freeRectsArray: [[String: Any]] = scrap.freeRects.map { rect in
+            [
+                "id": rect.id.uuidString,
+                "x": rect.x,
+                "y": rect.y,
+                "width": rect.width,
+                "height": rect.height,
+            ]
+        }
+        
+        return [
             "id": scrap.id.uuidString,
             "name": scrap.name,
             "width": scrap.width,
@@ -189,6 +214,8 @@ final class FirebaseSyncService {
             "notes": scrap.notes,
             "addedAt": Timestamp(date: scrap.addedAt),
             "colorHex": scrap.colorHex,
+            "cuts": cutsArray,
+            "freeRects": freeRectsArray,
         ]
     }
 
@@ -296,6 +323,38 @@ final class FirebaseSyncService {
             return nil
         }
 
+        // Parse cuts array
+        var cuts: [ScrapCut] = []
+        if let cutsArray = data["cuts"] as? [[String: Any]] {
+            cuts = cutsArray.compactMap { cutData in
+                guard
+                    let x = cutData["x"] as? Double,
+                    let y = cutData["y"] as? Double,
+                    let cutWidth = cutData["width"] as? Double,
+                    let cutHeight = cutData["height"] as? Double,
+                    let shapeRaw = cutData["shape"] as? String,
+                    let shape = PieceShape(rawValue: shapeRaw),
+                    let pieceName = cutData["pieceName"] as? String
+                else {
+                    return nil
+                }
+                
+                let cutId = (cutData["id"] as? String).flatMap { UUID(uuidString: $0) } ?? UUID()
+                let cutDate = (cutData["cutDate"] as? Timestamp)?.dateValue() ?? Date()
+                
+                return ScrapCut(
+                    id: cutId,
+                    x: x,
+                    y: y,
+                    width: cutWidth,
+                    height: cutHeight,
+                    shape: shape,
+                    pieceName: pieceName,
+                    cutDate: cutDate
+                )
+            }
+        }
+
         let scrap = ScrapItem(
             name: data["name"] as? String ?? "",
             width: width,
@@ -303,13 +362,43 @@ final class FirebaseSyncService {
             thickness: data["thickness"] as? Double,
             materialType: materialType,
             notes: data["notes"] as? String ?? "",
-            colorHex: colorHex
+            colorHex: colorHex,
+            cuts: cuts  // Pass cuts to initializer
         )
 
         if let idString = data["id"] as? String, let id = UUID(uuidString: idString) {
             scrap.id = id
         }
         scrap.addedAt = (data["addedAt"] as? Timestamp)?.dateValue() ?? Date()
+
+        // Parse and set free rects
+        if let freeRectsArray = data["freeRects"] as? [[String: Any]] {
+            let freeRects = freeRectsArray.compactMap { rectData -> ScrapFreeRect? in
+                guard
+                    let x = rectData["x"] as? Double,
+                    let y = rectData["y"] as? Double,
+                    let rectWidth = rectData["width"] as? Double,
+                    let rectHeight = rectData["height"] as? Double
+                else {
+                    return nil
+                }
+                
+                let rectId = (rectData["id"] as? String).flatMap { UUID(uuidString: $0) } ?? UUID()
+                
+                return ScrapFreeRect(
+                    id: rectId,
+                    x: x,
+                    y: y,
+                    width: rectWidth,
+                    height: rectHeight
+                )
+            }
+            
+            // Only set if we have free rects data, otherwise let the default behavior handle it
+            if !freeRectsArray.isEmpty {
+                scrap.freeRects = freeRects
+            }
+        }
 
         return scrap
     }

@@ -46,7 +46,7 @@ struct ProjectDetailView: View {
             if let plan = viewModel.cutPlan {
                 OptimizationResultView(
                     cutPlan: plan,
-                    projectName: project.name,
+                    project: project,
                     onPresented: {
                         await adsManager.trackCompletedCutAndPresentAdIfNeeded(
                             adsRemoved: purchaseManager.hasRemovedAds
@@ -144,7 +144,7 @@ struct ProjectDetailView: View {
     private var optimizeSection: some View {
         Section {
             Button {
-                viewModel.optimize(using: scrapItems)
+                viewModel.optimize(using: scrapItems, context: modelContext)
                 if viewModel.cutPlan != nil { showingResult = true }
             } label: {
                 HStack {

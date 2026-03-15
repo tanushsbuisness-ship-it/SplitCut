@@ -29,15 +29,50 @@ struct CutOptimizer {
         var scrapPool = scrapUsageMode == .ignoreScrap ? [] : buildScrapPool(from: scrapItems)
         var sheetPool = scrapUsageMode == .onlyScrap ? [] : buildSheetPool(from: project.materials, trim: trim)
 
+        // Track scrap layouts and their free rectangles (similar to sheet layouts)
+        var scrapLayouts: [(template: ScrapTemplate, freeRects: [FreeRect], usages: [ScrapUsage])] = []
+        
         var scrapUsages: [ScrapUsage] = []
         var layouts: [SheetLayout] = []
         var freeRectSets: [[FreeRect]] = []
         var unplaced: [RequiredPieceDemand] = []
 
         for demand in demands {
-            if let scrapMatch = bestFitScrap(demand: demand, scrapPool: scrapPool) {
-                scrapUsages.append(scrapMatch.usage)
+            // First try to fit on existing scrap pieces with free space
+            var scrapPlaced = false
+            for i in scrapLayouts.indices {
+                guard scrapMatchesDemand(scrapLayouts[i].template, demand: demand) else { continue }
+                
+                if let (usage, updatedRects) = tryPlaceOnScrap(
+                    demand: demand,
+                    scrap: scrapLayouts[i].template,
+                    freeRects: scrapLayouts[i].freeRects,
+                    kerf: kerf
+                ) {
+                    scrapLayouts[i].freeRects = updatedRects
+                    scrapLayouts[i].usages.append(usage)
+                    scrapUsages.append(usage)
+                    scrapPlaced = true
+                    break
+                }
+            }
+            
+            if scrapPlaced {
+                continue
+            }
+            
+            // Try to open a new scrap piece from the pool
+            if let scrapMatch = bestFitScrap(demand: demand, scrapPool: scrapPool, kerf: kerf) {
+                let scrap = scrapPool[scrapMatch.index]
                 scrapPool.remove(at: scrapMatch.index)
+                
+                // Initialize the scrap layout with free rects after the first placement
+                scrapLayouts.append((
+                    template: scrap,
+                    freeRects: scrapMatch.updatedFreeRects,
+                    usages: [scrapMatch.usage]
+                ))
+                scrapUsages.append(scrapMatch.usage)
                 continue
             }
 
@@ -133,6 +168,7 @@ struct CutOptimizer {
     private struct ScrapMatchResult {
         let index: Int
         let usage: ScrapUsage
+        let updatedFreeRects: [FreeRect]
     }
 
     private struct SheetTemplate {
@@ -153,6 +189,7 @@ struct CutOptimizer {
         let thickness: Double?
         let materialType: MaterialType
         let colorHex: String
+        let freeRects: [FreeRect]  // Pre-calculated from database
     }
 
     // MARK: - Placement logic
@@ -254,15 +291,21 @@ struct CutOptimizer {
 
     private static func bestFitScrap(
         demand: RequiredPieceDemand,
-        scrapPool: [ScrapTemplate]
+        scrapPool: [ScrapTemplate],
+        kerf: Double
     ) -> ScrapMatchResult? {
         var bestIndex: Int? = nil
         var bestUsage: ScrapUsage? = nil
+        var bestFreeRects: [FreeRect]? = nil
         var bestArea = Double.infinity
 
         for (index, scrap) in scrapPool.enumerated() {
             guard scrapMatchesDemand(scrap, demand: demand) else { continue }
 
+            // Use free rectangles directly from the database (via ScrapTemplate)
+            let availableFreeRects = scrap.freeRects
+            
+            // Try to place the demand in the available free space
             let orientations: [(width: Double, height: Double, rotated: Bool)] = [
                 (demand.width, demand.height, false),
                 (demand.height, demand.width, true),
@@ -272,14 +315,57 @@ struct CutOptimizer {
                 if option.rotated && (!demand.rotationAllowed || demand.grainDirectionLocked) {
                     continue
                 }
-                guard scrap.width >= option.width, scrap.height >= option.height else {
-                    continue
+                
+                let neededW = option.width + kerf
+                let neededH = option.height + kerf
+                
+                // Find best-fit free rectangle
+                var fittingIndex: Int? = nil
+                var fittingArea = Double.infinity
+                
+                for (i, rect) in availableFreeRects.enumerated() {
+                    if rect.width >= neededW && rect.height >= neededH {
+                        let area = rect.width * rect.height
+                        if area < fittingArea {
+                            fittingArea = area
+                            fittingIndex = i
+                        }
+                    }
                 }
-
-                let area = scrap.width * scrap.height
-                if area < bestArea {
-                    bestArea = area
+                
+                guard let idx = fittingIndex else { continue }
+                
+                let rect = availableFreeRects[idx]
+                let totalArea = scrap.width * scrap.height
+                
+                if totalArea < bestArea {
+                    bestArea = totalArea
                     bestIndex = index
+                    // Calculate free rectangles after placing this piece
+                    let rightRect = FreeRect(
+                        x: rect.x + neededW,
+                        y: rect.y,
+                        width: rect.width - neededW,
+                        height: rect.height
+                    )
+                    let topRect = FreeRect(
+                        x: rect.x,
+                        y: rect.y + neededH,
+                        width: neededW,
+                        height: rect.height - neededH
+                    )
+                    
+                    var updatedRects = availableFreeRects
+                    updatedRects.remove(at: idx)
+                    if rightRect.width > kerf && rightRect.height > kerf { updatedRects.append(rightRect) }
+                    if topRect.width > kerf && topRect.height > kerf { updatedRects.append(topRect) }
+                    bestFreeRects = updatedRects
+                    
+                    // Convert FreeRect to ScrapFreeRect for database storage
+                    let scrapFreeRects = updatedRects.map { freeRect in
+                        ScrapFreeRect(x: freeRect.x, y: freeRect.y, width: freeRect.width, height: freeRect.height)
+                    }
+                    
                     bestUsage = ScrapUsage(
                         scrapId: scrap.scrapId,
                         scrapName: scrap.scrapName,
@@ -293,15 +379,107 @@ struct CutOptimizer {
                         rotated: option.rotated,
                         materialType: demand.materialType,
                         thickness: demand.thickness,
-                        colorHex: demand.colorHex
+                        colorHex: demand.colorHex,
+                        cutX: rect.x,
+                        cutY: rect.y,
+                        updatedFreeRects: scrapFreeRects
                     )
                 }
                 break
             }
         }
 
-        guard let bestIndex, let bestUsage else { return nil }
-        return ScrapMatchResult(index: bestIndex, usage: bestUsage)
+        guard let bestIndex, let bestUsage, let bestFreeRects else { return nil }
+        return ScrapMatchResult(index: bestIndex, usage: bestUsage, updatedFreeRects: bestFreeRects)
+    }
+    
+    
+    /// Try to place a piece on an already-opened scrap piece with free rectangles
+    private static func tryPlaceOnScrap(
+        demand: RequiredPieceDemand,
+        scrap: ScrapTemplate,
+        freeRects: [FreeRect],
+        kerf: Double
+    ) -> (usage: ScrapUsage, updatedFreeRects: [FreeRect])? {
+        // Try both orientations
+        let orientations: [(width: Double, height: Double, rotated: Bool)] = [
+            (demand.width, demand.height, false),
+            (demand.height, demand.width, true),
+        ]
+        
+        for option in orientations {
+            if option.rotated && (!demand.rotationAllowed || demand.grainDirectionLocked) {
+                continue
+            }
+            
+            let neededW = option.width + kerf
+            let neededH = option.height + kerf
+            
+            // Find best-fit free rectangle
+            var bestIdx: Int? = nil
+            var bestArea = Double.infinity
+            
+            for (i, rect) in freeRects.enumerated() {
+                if rect.width >= neededW && rect.height >= neededH {
+                    let area = rect.width * rect.height
+                    if area < bestArea {
+                        bestArea = area
+                        bestIdx = i
+                    }
+                }
+            }
+            
+            guard let idx = bestIdx else { continue }
+            
+            let rect = freeRects[idx]
+            
+            // Guillotine split
+            let rightRect = FreeRect(
+                x: rect.x + neededW,
+                y: rect.y,
+                width: rect.width - neededW,
+                height: rect.height
+            )
+            let topRect = FreeRect(
+                x: rect.x,
+                y: rect.y + neededH,
+                width: neededW,
+                height: rect.height - neededH
+            )
+            
+            var updated = freeRects
+            updated.remove(at: idx)
+            if rightRect.width > kerf && rightRect.height > kerf { updated.append(rightRect) }
+            if topRect.width > kerf && topRect.height > kerf { updated.append(topRect) }
+            
+            // Convert FreeRect to ScrapFreeRect for database storage
+            let scrapFreeRects = updated.map { freeRect in
+                ScrapFreeRect(x: freeRect.x, y: freeRect.y, width: freeRect.width, height: freeRect.height)
+            }
+            
+            let usage = ScrapUsage(
+                scrapId: scrap.scrapId,
+                scrapName: scrap.scrapName,
+                scrapWidth: scrap.width,
+                scrapHeight: scrap.height,
+                pieceId: demand.pieceId,
+                pieceName: demand.pieceName,
+                pieceShape: demand.shape,
+                pieceWidth: demand.width,
+                pieceHeight: demand.height,
+                rotated: option.rotated,
+                materialType: demand.materialType,
+                thickness: demand.thickness,
+                colorHex: demand.colorHex,
+                cutX: rect.x,  // Position in the free rect
+                cutY: rect.y,
+                updatedFreeRects: scrapFreeRects
+            )
+            
+            return (usage, updated)
+        }
+        
+        return nil
     }
 
     // MARK: - Expansion helpers
@@ -349,6 +527,15 @@ struct CutOptimizer {
     private static func buildScrapPool(from scrapItems: [ScrapItem]) -> [ScrapTemplate] {
         scrapItems.compactMap { scrap in
             guard scrap.width > 0, scrap.height > 0 else { return nil }
+            
+            // Convert ScrapFreeRect from database to optimizer FreeRect
+            let freeRects = scrap.freeRects.map { scrapRect in
+                FreeRect(x: scrapRect.x, y: scrapRect.y, width: scrapRect.width, height: scrapRect.height)
+            }
+            
+            // Skip scraps with no available space
+            guard !freeRects.isEmpty else { return nil }
+            
             return ScrapTemplate(
                 scrapId: scrap.id,
                 scrapName: scrap.displayName,
@@ -356,7 +543,8 @@ struct CutOptimizer {
                 height: scrap.height,
                 thickness: scrap.thickness,
                 materialType: scrap.materialType,
-                colorHex: scrap.colorHex
+                colorHex: scrap.colorHex,
+                freeRects: freeRects
             )
         }
     }
