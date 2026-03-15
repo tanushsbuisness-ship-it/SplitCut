@@ -88,6 +88,7 @@ struct CutPlanPDFExporter {
                 placements: [
                     PrintablePlacement(
                         name: usage.pieceName,
+                        shape: usage.pieceShape,
                         x: 0,
                         y: 0,
                         width: usage.rotated ? usage.pieceHeight : usage.pieceWidth,
@@ -114,7 +115,7 @@ struct CutPlanPDFExporter {
                 materialColorHex: layout.materialColorHex,
                 grainColorHex: MaterialColorPreset.preset(for: layout.materialColorHex)?.grainHex,
                 placements: sortedPlacements.map {
-                    PrintablePlacement(name: $0.pieceName, x: $0.x, y: $0.y, width: $0.width, height: $0.height)
+                    PrintablePlacement(name: $0.pieceName, shape: $0.pieceShape, x: $0.x, y: $0.y, width: $0.width, height: $0.height)
                 },
                 instructionLines: sortedPlacements.enumerated().map { index, placement in
                     "Cut \(index + 1): \"\(placement.pieceName)\" — \(dimStr(placement.width)) × \(dimStr(placement.height)) @ (\(dimStr(placement.x)), \(dimStr(placement.y)))."
@@ -322,15 +323,20 @@ struct CutPlanPDFExporter {
             )
             let fill = UIColor(CutDiagramView.palette[index % CutDiagramView.palette.count]).withAlphaComponent(0.78)
             let stroke = UIColor(CutDiagramView.palette[index % CutDiagramView.palette.count])
+            let piecePath = bezierPath(for: placement.shape, in: pieceRect)
             fill.setFill()
-            context.fill(pieceRect)
+            piecePath.fill()
             stroke.setStroke()
             context.setLineWidth(1.0)
-            context.stroke(pieceRect)
+            piecePath.lineWidth = 1.0
+            piecePath.stroke()
 
             if pieceRect.width >= 48, pieceRect.height >= 20 {
                 let labelRect = pieceRect.insetBy(dx: 6, dy: 6)
-                NSString(string: placement.name).draw(
+                let labelText = placement.shape == .rectangle
+                    ? placement.name
+                    : "\(placement.name)\n\(placement.shape.rawValue)"
+                NSString(string: labelText).draw(
                     in: labelRect,
                     withAttributes: [
                         .font: UIFont.systemFont(ofSize: max(9, min(18, pieceRect.height * 0.18)), weight: .medium),
@@ -371,6 +377,47 @@ struct CutPlanPDFExporter {
 
         context.restoreGState()
     }
+
+    private static func bezierPath(for shape: PieceShape, in rect: CGRect) -> UIBezierPath {
+        switch shape {
+        case .rectangle:
+            return UIBezierPath(rect: rect)
+        case .triangle:
+            let path = UIBezierPath()
+            path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+            path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+            path.addLine(to: CGPoint(x: rect.minX, y: rect.minY))
+            path.close()
+            return path
+        case .circle:
+            return UIBezierPath(ovalIn: rect)
+        case .semicircle:
+            let path = UIBezierPath()
+            path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+            path.addArc(
+                withCenter: CGPoint(x: rect.midX, y: rect.maxY),
+                radius: rect.width / 2,
+                startAngle: .pi,
+                endAngle: 0,
+                clockwise: true
+            )
+            path.close()
+            return path
+        case .quarterCircle:
+            let path = UIBezierPath()
+            path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+            path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+            path.addArc(
+                withCenter: CGPoint(x: rect.minX, y: rect.maxY),
+                radius: rect.width,
+                startAngle: 0,
+                endAngle: -.pi / 2,
+                clockwise: false
+            )
+            path.close()
+            return path
+        }
+    }
 }
 
 private struct PrintableSurface {
@@ -386,6 +433,7 @@ private struct PrintableSurface {
 
 private struct PrintablePlacement {
     let name: String
+    let shape: PieceShape
     let x: Double
     let y: Double
     let width: Double

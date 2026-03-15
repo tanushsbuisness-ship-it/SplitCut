@@ -69,9 +69,10 @@ struct CutDiagramView: View {
                 let colorIdx    = cMap[placement.pieceId] ?? 0
                 let fillColor   = Self.palette[colorIdx].opacity(0.78)
                 let strokeColor = Self.palette[colorIdx]
+                let piecePath = path(for: placement.pieceShape, in: rect)
 
-                context.fill(Path(rect), with: .color(fillColor))
-                context.stroke(Path(rect), with: .color(strokeColor), lineWidth: 1.5)
+                context.fill(piecePath, with: .color(fillColor))
+                context.stroke(piecePath, with: .color(strokeColor), lineWidth: 1.5)
 
                 // Label if the rectangle is large enough to read
                 if rect.width >= 24 && rect.height >= 14 {
@@ -85,6 +86,47 @@ struct CutDiagramView: View {
                     context.draw(label, in: rect.insetBy(dx: 3, dy: 2))
                 }
             }
+        }
+    }
+
+    private func path(for shape: PieceShape, in rect: CGRect) -> Path {
+        switch shape {
+        case .rectangle:
+            return Path(rect)
+        case .triangle:
+            var path = Path()
+            path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+            path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+            path.addLine(to: CGPoint(x: rect.minX, y: rect.minY))
+            path.closeSubpath()
+            return path
+        case .circle:
+            return Path(ellipseIn: rect)
+        case .semicircle:
+            var path = Path()
+            path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+            path.addArc(
+                center: CGPoint(x: rect.midX, y: rect.maxY),
+                radius: rect.width / 2,
+                startAngle: .degrees(180),
+                endAngle: .degrees(0),
+                clockwise: false
+            )
+            path.closeSubpath()
+            return path
+        case .quarterCircle:
+            var path = Path()
+            path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+            path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+            path.addArc(
+                center: CGPoint(x: rect.minX, y: rect.maxY),
+                radius: rect.width,
+                startAngle: .degrees(0),
+                endAngle: .degrees(-90),
+                clockwise: true
+            )
+            path.closeSubpath()
+            return path
         }
     }
 

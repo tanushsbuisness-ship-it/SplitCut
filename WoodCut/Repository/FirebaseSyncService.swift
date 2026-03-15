@@ -125,17 +125,14 @@ final class FirebaseSyncService {
     }
 
     func clearLocalStore(context: ModelContext) {
-        let projects = (try? context.fetch(FetchDescriptor<Project>())) ?? []
-        let scrapItems = (try? context.fetch(FetchDescriptor<ScrapItem>())) ?? []
-
-        for project in projects {
-            context.delete(project)
+        do {
+            try context.delete(model: Project.self)
+            try context.delete(model: ScrapItem.self)
+            try context.save()
+            AppLogger.sync.info("Local SwiftData store cleared.")
+        } catch {
+            AppLogger.sync.error("Local SwiftData clear failed: \(error.localizedDescription)")
         }
-        for scrap in scrapItems {
-            context.delete(scrap)
-        }
-
-        try? context.save()
     }
 
     private func projectData(_ project: Project) -> [String: Any] {

@@ -79,7 +79,7 @@ struct MonetizationView: View {
             return "Remove Ads \(removeAdsProduct.displayPrice)"
         }
 
-        return "Remove Ads $4.99"
+        return "Remove Ads $1.99"
     }
 }
 
