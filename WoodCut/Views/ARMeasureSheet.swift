@@ -136,11 +136,8 @@ struct ARMeasureSheet: View {
             }
 
             HStack(spacing: 12) {
-                // Allow re-measuring width after it's been set
-                if arState.widthMeters != nil &&
-                    arState.phase != .widthFirst &&
-                    arState.phase != .widthSecond {
-                    Button("Redo Width") { arState.resetWidth() }
+                if arState.phase != .widthFirst || arState.widthMeters != nil || arState.lengthMeters != nil {
+                    Button("Redo") { arState.resetAll() }
                         .buttonStyle(.bordered)
                         .tint(.yellow)
                 }
@@ -284,9 +281,13 @@ final class ARCoordinator: NSObject {
     @MainActor
     func syncIfNeeded() {
         guard let view = sceneView else { return }
-        // If width was reset from SwiftUI, remove width nodes and reset tap state
-        if state.phase == .widthFirst && pointA != nil {
-            [NodeName.widthA, NodeName.widthB, NodeName.widthLine].forEach {
+        // If we are at the initial phase and there are no stored measurements,
+        // remove all measurement nodes (both width and length) and reset tap state.
+        if state.phase == .widthFirst && state.widthMeters == nil && state.lengthMeters == nil {
+            [
+                NodeName.widthA, NodeName.widthB, NodeName.widthLine,
+                NodeName.lengthA, NodeName.lengthB, NodeName.lengthLine
+            ].forEach {
                 view.scene.rootNode.childNode(withName: $0, recursively: false)?.removeFromParentNode()
             }
             pointA = nil
