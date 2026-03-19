@@ -14,8 +14,12 @@ final class AuthSessionViewModel {
     var isAuthenticated: Bool = false
     var isGoogleSigningIn: Bool = false
     var isAppleSigningIn: Bool = false
+    var isDeletingAccount: Bool = false
     var errorMessage: String?
     var currentUserId: String? = nil
+
+    var currentUserEmail: String? { Auth.auth().currentUser?.email }
+    var currentUserDisplayName: String? { Auth.auth().currentUser?.displayName }
 
     private var authListener: AuthStateDidChangeListenerHandle?
     private var currentNonce: String?
@@ -111,6 +115,14 @@ final class AuthSessionViewModel {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    func deleteAccount() async throws {
+        guard let user = Auth.auth().currentUser else { return }
+        isDeletingAccount = true
+        defer { isDeletingAccount = false }
+        try await user.delete()
+        GIDSignIn.sharedInstance.signOut()
     }
 
     func prepareAppleRequest(_ request: ASAuthorizationAppleIDRequest) {

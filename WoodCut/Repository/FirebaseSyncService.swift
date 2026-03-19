@@ -124,6 +124,39 @@ final class FirebaseSyncService {
         }
     }
 
+    func deleteAllUserData() async {
+        guard let firestore, let currentUserId else { return }
+
+        do {
+            let projectDocs = try await firestore
+                .collection(AppConfig.Firebase.usersCollection)
+                .document(currentUserId)
+                .collection(AppConfig.Firebase.projectsCollection)
+                .getDocuments()
+            for doc in projectDocs.documents {
+                try await doc.reference.delete()
+            }
+
+            let scrapDocs = try await firestore
+                .collection(AppConfig.Firebase.usersCollection)
+                .document(currentUserId)
+                .collection(AppConfig.Firebase.scrapCollection)
+                .getDocuments()
+            for doc in scrapDocs.documents {
+                try await doc.reference.delete()
+            }
+
+            try await firestore
+                .collection(AppConfig.Firebase.usersCollection)
+                .document(currentUserId)
+                .delete()
+
+            AppLogger.sync.info("All Firestore user data deleted for: \(currentUserId)")
+        } catch {
+            AppLogger.sync.error("Firestore user data deletion failed: \(error.localizedDescription)")
+        }
+    }
+
     func clearLocalStore(context: ModelContext) {
         do {
             try context.delete(model: Project.self)

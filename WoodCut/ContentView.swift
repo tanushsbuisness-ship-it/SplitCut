@@ -21,12 +21,20 @@ struct ContentView: View {
     var body: some View {
         Group {
             if authSession.isAuthenticated || isGuestMode {
-                AppShellView {
-                    FirebaseSyncService.shared.clearLocalStore(context: modelContext)
-                    authSession.signOut()
-                    isGuestMode = false
-                    lastHydratedUserId = nil
-                }
+                AppShellView(
+                    authSession: authSession,
+                    isGuestMode: isGuestMode,
+                    onSignOut: {
+                        FirebaseSyncService.shared.clearLocalStore(context: modelContext)
+                        authSession.signOut()
+                        isGuestMode = false
+                        lastHydratedUserId = nil
+                    },
+                    onAccountDeleted: {
+                        isGuestMode = false
+                        lastHydratedUserId = nil
+                    }
+                )
             } else {
                 LoginView(
                     authSession: authSession,
@@ -63,18 +71,29 @@ struct ContentView: View {
 }
 
 private struct AppShellView: View {
-    let signOut: () -> Void
+    let authSession: AuthSessionViewModel
+    let isGuestMode: Bool
+    let onSignOut: () -> Void
+    let onAccountDeleted: () -> Void
 
     var body: some View {
         TabView {
-            ProjectsView(onSignOut: signOut)
+            ProjectsView()
                 .tabItem { Label("Projects", systemImage: "folder") }
 
             ScrapBinView()
                 .tabItem { Label("Scrap Bin", systemImage: "tray.2") }
-            
+
             SavedPlansView()
                 .tabItem { Label("Plans", systemImage: "bookmark") }
+
+            AccountView(
+                authSession: authSession,
+                isGuestMode: isGuestMode,
+                onSignOut: onSignOut,
+                onAccountDeleted: onAccountDeleted
+            )
+            .tabItem { Label("Account", systemImage: "person.circle") }
         }
     }
 }
